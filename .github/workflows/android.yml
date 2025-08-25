@@ -1,5 +1,4 @@
 name: android-apk
-
 on:
   workflow_dispatch:
 
@@ -9,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build APK (Buildozer Action)
-        uses: kivy/buildozer-action@v1
+        uses: ArtemSBulgakov/buildozer-action@v1
         with:
           command: buildozer -v android debug
       - name: Upload APK
