@@ -5,7 +5,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout as Bx
 
 GOLD = "#d6b179"
 BG_DARK = "#121212"
@@ -47,7 +46,7 @@ KV = r"""
 
 <SmallBtn@Button>:
     background_normal: ''
-    background_color: (0.24,0.64,1,1)  # BLUE
+    background_color: (0.24,0.64,1,1)
     color: (1,1,1,1)
     bold: True
     size_hint: None, None
@@ -254,7 +253,6 @@ KV = r"""
         Rectangle:
             pos: self.pos
             size: self.size
-    # Top (rotacionado 180° para o oponente)
     Scatter:
         size_hint_y: None
         height: top_card.height + dp(12)
@@ -267,7 +265,6 @@ KV = r"""
             general_name: "GENERAL 1"
             app_ref: app
             rotated: True
-    # Bottom (normal)
     PlayerCard:
         id: bottom_card
         general_name: "GENERAL 2"
@@ -293,13 +290,11 @@ class PlayerCard(BoxLayout):
     general_name = StringProperty("GENERAL")
     rotated = BooleanProperty(False)
 
-    # estado
     vida = NumericProperty(4)
     escudo_azul = NumericProperty(8)
     escudo_vermelho = NumericProperty(2)
     escudo_atual = NumericProperty(0)
 
-    # bindings visuais
     shield_text = StringProperty("0")
     shield_color = ObjectProperty((61/255,163/255,1,1))
     shield_btn_text = StringProperty("−")
@@ -333,7 +328,7 @@ class PlayerCard(BoxLayout):
             return
         self.app_ref.game_over = True
         winner = "GENERAL 1" if loser == "GENERAL 2" else "GENERAL 2"
-        content = Bx(orientation='vertical', padding=12, spacing=10)
+        content = BoxLayout(orientation='vertical', padding=12, spacing=10)
         content.add_widget(Label(text=f"[b]{winner} venceu a partida![/b]", markup=True))
         btn = Button(text="OK", size_hint=(1,None), height="40dp")
         popup = Popup(title="Fim de jogo", content=content, size_hint=(.7,.35))
