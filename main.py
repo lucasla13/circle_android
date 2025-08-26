@@ -5,6 +5,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.factory import Factory
+from kivy.core.window import Window
 
 GOLD = "#d6b179"
 BG_DARK = "#121212"
@@ -377,29 +379,44 @@ class CircleOfObsessionApp(App):
     game_over = BooleanProperty(False)
 
     def build(self):
-        return Builder.load_string(KV).children[0]
-
-    def on_start(self):
-        self.show_main()
+        Builder.load_string(KV)
+        Window.clearcolor = (18/255,18/255,18/255,1)
+        # Retorna a tela inicial via Factory (estável no Android)
+        return Factory.MainScreen(app_ref=self)
 
     def _set_root(self, widget):
-        from kivy.core.window import Window
-        Window.clearcolor = (18/255,18/255,18/255,1)
-        self.root.clear_widgets()
-        self.root.add_widget(widget)
+        # Troca o conteúdo da raiz com segurança
+        root = self.root
+        if root is None:
+            return
+        root_parent = root.parent
+        if root_parent:
+            # Se o widget raiz estiver dentro de algo, substitui nele
+            idx = root_parent.children.index(root)
+            root_parent.remove_widget(root)
+            root_parent.add_widget(widget, index=idx)
+            self._set_app_root_reference(widget)
+        else:
+            # Caso comum: raiz direta do App
+            self.root.clear_widgets()
+            self.root.add_widget(widget)
+
+    def _set_app_root_reference(self, widget):
+        # garante que App.root referencia o widget atual
+        self._app_window.children = [widget]
 
     def show_main(self):
-        self._set_root(Builder.template('MainScreen', app_ref=self))
+        self._set_root(Factory.MainScreen(app_ref=self))
 
     def show_config(self):
-        self._set_root(Builder.template('ConfigScreen', app_ref=self))
+        self._set_root(Factory.ConfigScreen(app_ref=self))
 
     def show_game(self):
-        self._set_root(Builder.template('GameScreen', app_ref=self))
-        scr = self.root.children[0] if self.root.children else self.root
+        gs = Factory.GameScreen(app_ref=self)
+        self._set_root(gs)
         try:
-            scr.ids.top_card.sync_from_app()
-            scr.ids.bottom_card.sync_from_app()
+            gs.ids.top_card.sync_from_app()
+            gs.ids.bottom_card.sync_from_app()
         except Exception:
             pass
 
