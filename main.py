@@ -1,3 +1,26 @@
+# main.py — Circle of Obsession (Kivy) com log de crash em arquivo
+# Gera crash.log em: /data/data/org.example.circleofobsession/files/crash.log (via run-as)
+
+import os, sys, traceback
+
+# === Hook global: captura qualquer exceção não tratada e grava em crash.log ===
+def _crash_log_hook(exctype, value, tb):
+    try:
+        from kivy.logger import Logger
+        from kivy.app import App
+        msg = ''.join(traceback.format_exception(exctype, value, tb))
+        Logger.critical("APP", msg)
+        app = App.get_running_app()
+        # user_data_dir é acessível via "adb shell run-as <package> ..."
+        path = app.user_data_dir if app else "."
+        os.makedirs(path, exist_ok=True)
+        with open(os.path.join(path, "crash.log"), "w", encoding="utf-8") as f:
+            f.write(msg)
+    except Exception:
+        pass  # evitar loop de exceção
+    # ainda deixa o Python encerrar o app (útil pra ver o erro)
+sys.excepthook = _crash_log_hook
+
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import DictProperty, BooleanProperty, ObjectProperty, StringProperty, NumericProperty
@@ -7,6 +30,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.factory import Factory
 from kivy.core.window import Window
+from kivy.logger import Logger
 
 GOLD = "#d6b179"
 BG_DARK = "#121212"
@@ -379,31 +403,32 @@ class CircleOfObsessionApp(App):
     game_over = BooleanProperty(False)
 
     def build(self):
-        Builder.load_string(KV)
+        Logger.info("APP: build start")
+        Builder.load_string(KV)  # carrega as templates
         Window.clearcolor = (18/255,18/255,18/255,1)
-        # Retorna a tela inicial via Factory (estável no Android)
-        return Factory.MainScreen(app_ref=self)
+        root = Factory.MainScreen(app_ref=self)
+        Logger.info("APP: build ok")
+        return root
+
+    def on_start(self):
+        Logger.info("APP: on_start ok")
 
     def _set_root(self, widget):
-        # Troca o conteúdo da raiz com segurança
         root = self.root
         if root is None:
             return
-        root_parent = root.parent
-        if root_parent:
-            # Se o widget raiz estiver dentro de algo, substitui nele
-            idx = root_parent.children.index(root)
-            root_parent.remove_widget(root)
-            root_parent.add_widget(widget, index=idx)
-            self._set_app_root_reference(widget)
-        else:
-            # Caso comum: raiz direta do App
-            self.root.clear_widgets()
-            self.root.add_widget(widget)
-
-    def _set_app_root_reference(self, widget):
-        # garante que App.root referencia o widget atual
-        self._app_window.children = [widget]
+        try:
+            self.root_parent = root.parent
+            if self.root_parent:
+                idx = self.root_parent.children.index(root)
+                self.root_parent.remove_widget(root)
+                self.root_parent.add_widget(widget, index=idx)
+            else:
+                self.root.clear_widgets()
+                self.root.add_widget(widget)
+        except Exception as e:
+            Logger.exception("APP: _set_root error: %s", e)
+            raise
 
     def show_main(self):
         self._set_root(Factory.MainScreen(app_ref=self))
